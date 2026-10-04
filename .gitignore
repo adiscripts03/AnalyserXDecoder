@@ -1,0 +1,30 @@
+# Environment variables and secrets (NEVER commit this!)
+.env
+*.env
+.env.*
+!.env.example
+
+# Python virtual environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Local vector database storage
+vectorstore/
+*.chroma
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.vscode/
+.idea/
