@@ -1,13 +1,13 @@
-# WebpageDecoder (Wikipedia of Webpages) 🌐
+# AnalyserXDecoder🌐
 
-> **Webpages decoded to their very core!**  
+> **Any piece of evidence decoded to their very core!**  
 > A Retrieval-Augmented Generation (RAG) application that allows users to provide any webpage URL or document (PDF) and converse with it using Google Gemini and ChromaDB.
 
 ---
 
 ## 🚀 Overview
 
-**WebpageDecoder** is an AI-powered document intelligence app. Instead of manually reading through lengthy articles, research papers, or documentation, WebpageDecoder ingests the source, extracts clean text, splits it into semantic chunks, and allows you to query it conversationally with grounded, hallucination-free answers.
+**AnalyserXDecoder** is an AI-powered document intelligence app. Instead of manually reading through lengthy articles, research papers, or documentation, WebpageDecoder ingests the source, extracts clean text, splits it into semantic chunks, and allows you to query it conversationally with grounded, hallucination-free answers.
 
 ---
 
