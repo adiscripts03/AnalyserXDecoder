@@ -21,7 +21,7 @@ from rag_app.vector_store import (
     get_vector_store,
 )
 from rag_app.retriever import get_retriever, format_retrieved_documents
-from main import (
+from rag_app.main import (
     answer_query,
     build_rag_chain,
     DEFAULT_COLLECTION,
