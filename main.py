@@ -15,6 +15,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.documents import Document
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_mistralai import ChatMistralAI
 
 from rag_app.document_loader import load_url, load_pdf, split_documents
 from rag_app.vector_store import (
@@ -34,8 +35,14 @@ from rag_app.retriever import (
 load_dotenv()
 
 DEFAULT_COLLECTION = "webpage_decoder"
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
-FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-flash-latest"]
+
+# Model provider configurations
+DEFAULT_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+DEFAULT_MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "open-mistral-7b")
+
+GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-flash-latest"]
+MISTRAL_FALLBACK_MODELS = ["mistral-small-latest"]
 
 # Grounded RAG system prompt
 RAG_PROMPT_TEMPLATE = """You are WebpageDecoder, an intelligent AI research assistant that decodes webpages and documents to their core.
@@ -53,32 +60,59 @@ Question:
 Answer (with citations referencing the sources above, e.g. [Source 1], [Source 2]):"""
 
 
-def check_api_key() -> bool:
-    """Verifies that the Google Gemini API key is configured."""
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        print("\n" + "!" * 60)
-        print("⚠️  WARNING: GOOGLE_API_KEY is not set!")
-        print("Please set your GOOGLE_API_KEY in the .env file or environment.")
-        print("Get your API key at: https://aistudio.google.com/")
-        print("!" * 60 + "\n")
-        return False
-    return True
+def check_api_key(provider: str = DEFAULT_PROVIDER) -> bool:
+    """Verifies that the appropriate API key is configured for the selected provider."""
+    provider_clean = provider.lower()
+    if provider_clean == "mistral":
+        api_key = os.getenv("MISTRAL_API_KEY")
+        if not api_key:
+            print("\n" + "!" * 60)
+            print("⚠️  WARNING: MISTRAL_API_KEY is not set!")
+            print("Please set your MISTRAL_API_KEY in the .env file or environment.")
+            print("Get your API key at: https://console.mistral.ai/")
+            print("!" * 60 + "\n")
+            return False
+        return True
+    else:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            print("\n" + "!" * 60)
+            print("⚠️  WARNING: GOOGLE_API_KEY is not set!")
+            print("Please set your GOOGLE_API_KEY in the .env file or environment.")
+            print("Get your API key at: https://aistudio.google.com/")
+            print("!" * 60 + "\n")
+            return False
+        return True
 
 
-def get_llm(model_name: Optional[str] = None, temperature: float = 0.2) -> ChatGoogleGenerativeAI:
-    """Initializes and returns the ChatGoogleGenerativeAI model."""
-    selected_model = model_name or DEFAULT_MODEL
-    return ChatGoogleGenerativeAI(
-        model=selected_model,
-        temperature=temperature,
-    )
+def get_llm(
+    provider: str = DEFAULT_PROVIDER,
+    model_name: Optional[str] = None,
+    temperature: float = 0.2,
+):
+    """Initializes and returns the Chat model for either Gemini or Mistral."""
+    provider_clean = provider.lower()
+    if provider_clean == "mistral":
+        selected_model = model_name or DEFAULT_MISTRAL_MODEL
+        return ChatMistralAI(
+            model=selected_model,
+            temperature=temperature,
+        )
+    else:
+        selected_model = model_name or DEFAULT_GEMINI_MODEL
+        return ChatGoogleGenerativeAI(
+            model=selected_model,
+            temperature=temperature,
+        )
 
 
-def build_rag_chain(model_name: Optional[str] = None):
-    """Builds a LangChain runnable RAG chain."""
+def build_rag_chain(
+    provider: str = DEFAULT_PROVIDER,
+    model_name: Optional[str] = None,
+):
+    """Builds a LangChain runnable RAG chain using the chosen provider."""
     prompt = ChatPromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
-    llm = get_llm(model_name=model_name)
+    llm = get_llm(provider=provider, model_name=model_name)
     return prompt | llm | StrOutputParser()
 
 
@@ -88,17 +122,7 @@ def ingest_webpage(
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
 ) -> int:
-    """Ingests, chunks, and stores content from a webpage URL into ChromaDB.
-
-    Args:
-        url: The web URL to scrape.
-        collection_name: Name of the ChromaDB collection.
-        chunk_size: Size of semantic text chunks in characters.
-        chunk_overlap: Overlap between adjacent chunks in characters.
-
-    Returns:
-        int: Number of chunks added to the vector store.
-    """
+    """Ingests, chunks, and stores content from a webpage URL into ChromaDB."""
     print(f"\n🌐 Scraping content from: {url}")
     try:
         docs = load_url(url)
@@ -125,17 +149,7 @@ def ingest_pdf_file(
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
 ) -> int:
-    """Ingests, chunks, and stores content from a local PDF file into ChromaDB.
-
-    Args:
-        file_path: Absolute or relative path to PDF file.
-        collection_name: Name of the ChromaDB collection.
-        chunk_size: Size of semantic text chunks in characters.
-        chunk_overlap: Overlap between adjacent chunks in characters.
-
-    Returns:
-        int: Number of chunks added to the vector store.
-    """
+    """Ingests, chunks, and stores content from a local PDF file into ChromaDB."""
     path = Path(file_path).resolve()
     if not path.exists():
         raise FileNotFoundError(f"PDF file not found at: {file_path}")
@@ -165,19 +179,21 @@ def answer_query(
     collection_name: str = DEFAULT_COLLECTION,
     search_type: str = "similarity",
     k: int = 4,
+    provider: str = DEFAULT_PROVIDER,
     model_name: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Retrieves relevant context and generates a grounded answer using Google Gemini.
+    """Retrieves relevant context and generates a grounded answer using the selected LLM provider.
 
     Args:
         question: User's query string.
         collection_name: Target Chroma collection.
         search_type: Strategy ('similarity' or 'mmr').
         k: Number of relevant chunks to retrieve.
-        model_name: Gemini model name.
+        provider: 'gemini' or 'mistral'.
+        model_name: Specific model identifier.
 
     Returns:
-        Dict containing 'answer', 'documents', and 'context'.
+        Dict containing 'answer', 'documents', 'context', and 'provider'.
     """
     retriever = get_retriever(
         collection_name=collection_name,
@@ -191,18 +207,28 @@ def answer_query(
             "answer": "No relevant documents found in the vector store. Please ingest a URL or PDF first.",
             "documents": [],
             "context": "",
+            "provider": provider,
         }
 
     formatted_context = format_retrieved_documents(retrieved_docs)
 
-    # Models with automatic fallback if the primary model hits rate limits or temporary demand spikes
-    candidate_models = [model_name or DEFAULT_MODEL] + [m for m in FALLBACK_MODELS if m != (model_name or DEFAULT_MODEL)]
+    # Candidate models based on provider
+    provider_clean = provider.lower()
+    if provider_clean == "mistral":
+        default_model = DEFAULT_MISTRAL_MODEL
+        fallbacks = MISTRAL_FALLBACK_MODELS
+    else:
+        default_model = DEFAULT_GEMINI_MODEL
+        fallbacks = GEMINI_FALLBACK_MODELS
+
+    primary = model_name or default_model
+    candidate_models = [primary] + [m for m in fallbacks if m != primary]
     last_error = None
     answer = None
 
     for candidate in candidate_models:
         try:
-            chain = build_rag_chain(model_name=candidate)
+            chain = build_rag_chain(provider=provider_clean, model_name=candidate)
             answer = chain.invoke({
                 "context": formatted_context,
                 "question": question,
@@ -213,12 +239,13 @@ def answer_query(
             continue
 
     if answer is None:
-        raise RuntimeError(f"Failed to generate answer from Gemini ({last_error})")
+        raise RuntimeError(f"Failed to generate answer from {provider.capitalize()} ({last_error})")
 
     return {
         "answer": answer,
         "documents": retrieved_docs,
         "context": formatted_context,
+        "provider": provider_clean,
     }
 
 
@@ -236,28 +263,34 @@ def run_interactive_mode(
     collection_name: str = DEFAULT_COLLECTION,
     search_type: str = "similarity",
     k: int = 4,
+    provider: str = DEFAULT_PROVIDER,
     model_name: Optional[str] = None,
 ) -> None:
     """Runs the interactive command-line interface."""
-    print("=" * 65)
-    print("🌐  WebpageDecoder — Wikipedia of Webpages (Interactive CLI)")
-    print("=" * 65)
-    print(f"• Active Collection: {collection_name}")
-    print(f"• Search Strategy:   {search_type} (top {k} chunks)")
-    print(f"• LLM Model:         {model_name or DEFAULT_MODEL}")
-    print("=" * 65)
+    current_provider = provider.lower()
+    current_model = model_name
 
     while True:
+        display_model = current_model or (DEFAULT_MISTRAL_MODEL if current_provider == "mistral" else DEFAULT_GEMINI_MODEL)
+        print("=" * 65)
+        print("🌐  WebpageDecoder — Wikipedia of Webpages (Interactive CLI)")
+        print("=" * 65)
+        print(f"• Active Collection: {collection_name}")
+        print(f"• Search Strategy:   {search_type} (top {k} chunks)")
+        print(f"• LLM Provider:      {current_provider.upper()} ({display_model})")
+        print("=" * 65)
+
         print("\nMenu:")
         print("  [1] Ingest Webpage URL")
         print("  [2] Ingest PDF File")
         print("  [3] Ask a Question (Conversational Q&A)")
-        print("  [4] Clear / Reset Collection")
-        print("  [5] Launch Streamlit Web UI")
-        print("  [6] Exit")
+        print("  [4] Switch LLM Provider (Gemini / Mistral)")
+        print("  [5] Clear / Reset Collection")
+        print("  [6] Launch Streamlit Web UI")
+        print("  [7] Exit")
 
         try:
-            choice = input("\nEnter choice [1-6]: ").strip()
+            choice = input("\nEnter choice [1-7]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting. Goodbye!")
             break
@@ -283,7 +316,7 @@ def run_interactive_mode(
                 print(f"❌ Failed to ingest PDF: {e}")
 
         elif choice == "3":
-            print("\n--- Conversational Q&A (Press Enter with empty input to return to menu) ---")
+            print(f"\n--- Conversational Q&A with {current_provider.upper()} (Press Enter with empty input to return) ---")
             while True:
                 try:
                     question = input("\n💬 Your question: ").strip()
@@ -292,14 +325,15 @@ def run_interactive_mode(
                 if not question:
                     break
 
-                print("\n🔍 Retrieving context & generating answer with Gemini...\n")
+                print(f"\n🔍 Retrieving context & generating answer with {current_provider.capitalize()}...\n")
                 try:
                     result = answer_query(
                         question=question,
                         collection_name=collection_name,
                         search_type=search_type,
                         k=k,
-                        model_name=model_name,
+                        provider=current_provider,
+                        model_name=current_model,
                     )
                     print("-" * 60)
                     print("💡 Answer:\n")
@@ -316,6 +350,22 @@ def run_interactive_mode(
                     print(f"❌ Query error: {e}")
 
         elif choice == "4":
+            print(f"\nCurrent provider: {current_provider.upper()}")
+            print("  [1] Gemini (models: gemini-3.5-flash, gemini-3.8-flash)")
+            print("  [2] Mistral (models: open-mistral-7b, mistral-small-latest)")
+            p_choice = input("Select provider [1-2]: ").strip()
+            if p_choice == "1":
+                current_provider = "gemini"
+                current_model = None
+                print("Switched to Google Gemini.")
+            elif p_choice == "2":
+                current_provider = "mistral"
+                current_model = None
+                print("Switched to Mistral AI.")
+            else:
+                print("Invalid choice, keeping current provider.")
+
+        elif choice == "5":
             confirm = input(f"Are you sure you want to clear collection '{collection_name}'? (y/N): ").strip().lower()
             if confirm == "y":
                 try:
@@ -324,20 +374,20 @@ def run_interactive_mode(
                 except Exception as e:
                     print(f"❌ Error clearing collection: {e}")
 
-        elif choice == "5":
+        elif choice == "6":
             launch_streamlit()
 
-        elif choice == "6":
+        elif choice == "7":
             print("Goodbye! 👋")
             break
 
         else:
-            print("Invalid choice. Please select 1 through 6.")
+            print("Invalid choice. Please select 1 through 7.")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="WebpageDecoder — RAG-powered Q&A over webpages and documents with Google Gemini."
+        description="WebpageDecoder — RAG-powered Q&A over webpages and documents with Google Gemini & Mistral AI."
     )
     parser.add_argument(
         "--url",
@@ -353,6 +403,13 @@ def parse_args() -> argparse.Namespace:
         "-q", "--query",
         type=str,
         help="A question to query against the ingested knowledge base.",
+    )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        choices=["gemini", "mistral"],
+        default=DEFAULT_PROVIDER,
+        help="LLM Provider: 'gemini' (default) or 'mistral'.",
     )
     parser.add_argument(
         "--collection",
@@ -382,7 +439,7 @@ def parse_args() -> argparse.Namespace:
         "--model",
         type=str,
         default=None,
-        help="Gemini chat model to use (default: gemini-3.5-flash).",
+        help="Specific model name (defaults to gemini-3.5-flash for Gemini or open-mistral-7b for Mistral).",
     )
     parser.add_argument(
         "--ui",
@@ -399,8 +456,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """Main application entry point."""
-    check_api_key()
     args = parse_args()
+    check_api_key(args.provider)
 
     # Launch Streamlit UI
     if args.ui:
@@ -426,13 +483,15 @@ def main() -> None:
 
     # If query is passed, run one-shot query
     if args.query:
-        print(f"\n❓ Question: {args.query}\n")
+        print(f"\n❓ Question: {args.query}")
+        print(f"🤖 Provider: {args.provider.capitalize()}\n")
         try:
             result = answer_query(
                 question=args.query,
                 collection_name=args.collection,
                 search_type=args.search_type,
                 k=args.k,
+                provider=args.provider,
                 model_name=args.model,
             )
             print("💡 Answer:\n")
@@ -451,6 +510,7 @@ def main() -> None:
             collection_name=args.collection,
             search_type=args.search_type,
             k=args.k,
+            provider=args.provider,
             model_name=args.model,
         )
 

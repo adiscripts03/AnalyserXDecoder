@@ -10,6 +10,7 @@ def cosine_similarity(v1, v2) -> float:
 
 
 text1 = "IIIT Nagpur is an engineering institute."
+
 text2 = "IIIT Nagpur is a college."
 text3 = "I love eating pizza."
 
