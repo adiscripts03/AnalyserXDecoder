@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnalyserXDecoder — Webpage & Document RAG Intelligence</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar: Controls & Ingestion -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🌐</div>
+        <div>
+          <h1 class="brand-title">AnalyserXDecoder</h1>
+          <p class="brand-tag">Grounded RAG Intelligence</p>
+        </div>
+      </div>
+
+      <!-- Provider & Model Configuration -->
+      <section class="section-card">
+        <div class="section-title">Model Settings</div>
+        <div class="form-group">
+          <label class="form-label" for="providerSelect">LLM Provider</label>
+          <select id="providerSelect" class="form-select">
+            <option value="gemini" selected>Google Gemini</option>
+            <option value="mistral">Mistral AI</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modelSelect">Model</label>
+          <select id="modelSelect" class="form-select">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+      </section>
+
+      <!-- Knowledge Base Ingestion -->
+      <section class="section-card">
+        <div class="section-title">Ingest Knowledge</div>
+        
+        <div class="tabs">
+          <button type="button" class="tab-btn active" data-tab="urlTab">Webpage URL</button>
+          <button type="button" class="tab-btn" data-tab="pdfTab">Upload PDF</button>
+        </div>
+
+        <!-- URL Tab -->
+        <div id="urlTab" class="tab-panel active">
+          <div class="form-group">
+            <input type="url" id="urlInput" class="form-control" placeholder="https://en.wikipedia.org/wiki/AI">
+          </div>
+          <button type="button" id="indexUrlBtn" class="btn btn-primary">
+            <span>Index Webpage</span>
+          </button>
+        </div>
+
+        <!-- PDF Tab -->
+        <div id="pdfTab" class="tab-panel">
+          <div class="file-dropzone" id="dropzone">
+            <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+            <div class="file-dropzone-text" id="dropzoneLabel">Click or drag PDF here</div>
+            <div class="file-name-preview" id="fileNamePreview"></div>
+          </div>
+          <button type="button" id="indexPdfBtn" class="btn btn-primary" disabled>
+            <span>Index PDF</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Retrieval Parameters -->
+      <section class="section-card">
+        <div class="section-title">Retrieval Controls</div>
+        <div class="form-group">
+          <label class="form-label" for="searchTypeSelect">Strategy</label>
+          <select id="searchTypeSelect" class="form-select">
+            <option value="similarity" selected>Cosine Similarity</option>
+            <option value="mmr">MMR (Diverse Chunks)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="kChunksRange">
+            Chunks to Retrieve: <span id="kValLabel" style="font-weight: 600;">4</span>
+          </label>
+          <input type="range" id="kChunksRange" min="1" max="10" value="4" class="form-range" style="accent-color: var(--primary);">
+        </div>
+      </section>
+
+      <!-- Indexed Sources -->
+      <section class="section-card">
+        <div class="section-title">
+          <span>Indexed Sources</span>
+          <span id="sourceCountBadge" style="font-size: 0.75rem; background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">0</span>
+        </div>
+        <div id="sourcesList" class="source-list">
+          <div class="empty-sources">No sources indexed in this session.</div>
+        </div>
+        <button type="button" id="clearStoreBtn" class="btn btn-danger-outline" style="margin-top: 4px;">
+          Clear Knowledge Base
+        </button>
+      </section>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="main-chat">
+      <!-- Chat Header -->
+      <header class="chat-header">
+        <div class="chat-header-info">
+          <h2 class="chat-header-title">Document Intelligence Workspace</h2>
+          <p class="chat-header-subtitle">Ask questions grounded strictly in your indexed documents</p>
+        </div>
+        <div class="model-badge">
+          <span class="model-badge-dot"></span>
+          <span id="activeModelBadge">Gemini 3.5 Flash</span>
+        </div>
+      </header>
+
+      <!-- Messages Stream -->
+      <div class="messages-container" id="messagesContainer">
+        <!-- Initial Empty State -->
+        <div class="empty-chat" id="emptyState">
+          <div class="empty-icon">📖</div>
+          <h3 class="empty-title">Ready to decode your sources</h3>
+          <p class="empty-desc">
+            Ingest a webpage URL or local PDF on the left to start conversing with your knowledge base.
+          </p>
+          <div class="quick-prompts">
+            <button class="quick-prompt-btn" data-prompt="What is this document about?">"What is this document about?"</button>
+            <button class="quick-prompt-btn" data-prompt="Summarize the key points and findings">"Summarize the key points"</button>
+            <button class="quick-prompt-btn" data-prompt="List the main conclusions">"List the main conclusions"</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Chat Input Bar -->
+      <div class="chat-input-area">
+        <form id="chatForm" class="input-wrapper">
+          <input 
+            type="text" 
+            id="chatInput" 
+            class="chat-input" 
+            placeholder="Ask a question about the indexed content..." 
+            autocomplete="off"
+          >
+          <button type="submit" id="sendBtn" class="send-btn" title="Send message">
+            ➤
+          </button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

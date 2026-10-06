@@ -231,17 +231,14 @@ def answer_query(
     }
 
 
-def launch_streamlit() -> None:
-    """Launches the Streamlit user interface."""
-    current_dir = Path(__file__).resolve().parent
-    app_path = current_dir / "streamlit_app.py"
-    if not app_path.exists():
-        app_path = current_dir / "app.py"
-    print(f"\n🚀 Launching Streamlit UI ({app_path})...")
+def launch_web_ui(port: int = 8000) -> None:
+    """Launches the modern HTML/CSS web interface."""
+    import uvicorn
+    print(f"\n🚀 Launching HTML/CSS Web UI at: http://localhost:{port}")
     try:
-        subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)])
+        uvicorn.run("rag_app.server:app", host="0.0.0.0", port=port, reload=True)
     except KeyboardInterrupt:
-        print("\nStreamlit server stopped.")
+        print("\nWeb server stopped.")
 
 
 def run_interactive_mode(
@@ -360,7 +357,7 @@ def run_interactive_mode(
                     print(f"❌ Error clearing collection: {e}")
 
         elif choice == "6":
-            launch_streamlit()
+            launch_web_ui()
 
         elif choice == "7":
             print("Goodbye! 👋")
@@ -429,7 +426,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ui",
         action="store_true",
-        help="Launch the Streamlit web application.",
+        help="Launch the HTML/CSS web application.",
     )
     parser.add_argument(
         "-i", "--interactive",
@@ -445,7 +442,7 @@ def main() -> None:
     check_api_key(args.provider)
 
     if args.ui:
-        launch_streamlit()
+        launch_web_ui()
         return
 
     if args.clear:
