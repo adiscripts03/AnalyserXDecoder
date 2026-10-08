@@ -25,21 +25,57 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatInput = document.getElementById("chatInput");
   const sendBtn = document.getElementById("sendBtn");
   const toast = document.getElementById("toast");
+  const indexSuccessBanner = document.getElementById("indexSuccessBanner");
+  const indexSuccessText = document.getElementById("indexSuccessText");
 
   let indexedSources = [];
   let selectedPdfFile = null;
+  let bannerTimeout = null;
 
-  // Model Options Mapping
+  // ----------------------------------------------------
+  // Theme Switcher Logic
+  // ----------------------------------------------------
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem("theme", theme);
+    } catch (e) {}
+
+    document.querySelectorAll(".theme-segment-btn").forEach((btn) => {
+      const val = btn.getAttribute("data-theme-val");
+      if (val === theme) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
+
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  applyTheme(savedTheme);
+
+  document.querySelectorAll(".theme-segment-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const themeVal = btn.getAttribute("data-theme-val");
+      if (themeVal) {
+        applyTheme(themeVal);
+      }
+    });
+  });
+
+  // ----------------------------------------------------
+  // Model Provider Mapping
+  // ----------------------------------------------------
   const MODEL_OPTIONS = {
     gemini: [
-      { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash (Fast & Grounded)" },
-      { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash (Latest)" },
+      { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
+      { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash" },
       { id: "gemini-flash-latest", name: "Gemini Flash Latest" },
     ],
     mistral: [
-      { id: "open-mistral-7b", name: "Open Mistral 7B (Fast & Free Tier)" },
-      { id: "mistral-small-latest", name: "Mistral Small Latest" },
-      { id: "codestral-latest", name: "Codestral Latest" },
+      { id: "open-mistral-7b", name: "Mistral 7B" },
+      { id: "mistral-small-latest", name: "Mistral Small" },
+      { id: "codestral-latest", name: "Codestral" },
     ],
   };
 
@@ -50,6 +86,18 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       toast.className = "toast";
     }, 3500);
+  }
+
+  // Green Inline Confirmation Helper
+  function showGreenConfirmation(message) {
+    if (!indexSuccessBanner || !indexSuccessText) return;
+    indexSuccessText.textContent = message;
+    indexSuccessBanner.style.display = "flex";
+
+    if (bannerTimeout) clearTimeout(bannerTimeout);
+    bannerTimeout = setTimeout(() => {
+      indexSuccessBanner.style.display = "none";
+    }, 8000);
   }
 
   // Update Model Select
@@ -67,9 +115,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateBadge() {
-    const providerName = providerSelect.options[providerSelect.selectedIndex].text;
-    const modelId = modelSelect.value;
-    activeModelBadge.textContent = `${providerName} (${modelId})`;
+    const selectedOption = modelSelect.options[modelSelect.selectedIndex];
+    const modelText = selectedOption ? selectedOption.text : modelSelect.value;
+    activeModelBadge.textContent = modelText;
   }
 
   providerSelect.addEventListener("change", updateModelOptions);
@@ -96,14 +144,14 @@ document.addEventListener("DOMContentLoaded", () => {
   dropzone.addEventListener("click", () => pdfFileInput.click());
   dropzone.addEventListener("dragover", (e) => {
     e.preventDefault();
-    dropzone.style.borderColor = "var(--primary)";
+    dropzone.classList.add("dragover");
   });
   dropzone.addEventListener("dragleave", () => {
-    dropzone.style.borderColor = "var(--border-color)";
+    dropzone.classList.remove("dragover");
   });
   dropzone.addEventListener("drop", (e) => {
     e.preventDefault();
-    dropzone.style.borderColor = "var(--border-color)";
+    dropzone.classList.remove("dragover");
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handlePdfSelected(e.dataTransfer.files[0]);
     }
@@ -116,11 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function handlePdfSelected(file) {
     if (!file.name.toLowerCase().endsWith(".pdf")) {
-      showToast("Please select a valid .pdf file", "error");
+      showToast("Please select a valid PDF file", "error");
       return;
     }
     selectedPdfFile = file;
-    fileNamePreview.textContent = `📄 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    fileNamePreview.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
     indexPdfBtn.disabled = false;
   }
 
@@ -128,15 +176,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderSources() {
     sourceCountBadge.textContent = indexedSources.length;
     if (indexedSources.length === 0) {
-      sourcesList.innerHTML = `<div class="empty-sources">No sources indexed in this session.</div>`;
+      sourcesList.innerHTML = `<div class="empty-sources">No sources indexed yet.</div>`;
       return;
     }
     sourcesList.innerHTML = indexedSources
       .map(
         (src, idx) => `
-        <div class="source-item" title="${src}">
-          <span class="source-item-icon">📌</span>
-          <span class="source-item-text">${idx + 1}. ${escapeHtml(src)}</span>
+        <div class="source-item" title="${escapeHtml(src.name)}">
+          <span class="source-index">${idx + 1}</span>
+          <span class="source-item-text">${escapeHtml(src.name)}</span>
+          <span class="source-chunk-tag">✓ ${src.chunks} chunks</span>
         </div>
       `
       )
@@ -164,17 +213,35 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to index URL");
       }
-      showToast(`Successfully indexed ${data.chunks} chunks!`, "success");
-      if (!indexedSources.includes(url)) {
-        indexedSources.push(url);
-        renderSources();
+
+      // 1. Show Green Inline Banner
+      showGreenConfirmation(`✓ Indexed ${data.chunks} chunks successfully!`);
+
+      // 2. Toast in Green
+      showToast(`✓ Successfully indexed ${data.chunks} chunks!`, "success");
+
+      // 3. Button turns vibrant green temporarily
+      indexUrlBtn.classList.add("btn-success");
+      indexUrlBtn.innerHTML = `<span>✓ Done! (${data.chunks} chunks)</span>`;
+      setTimeout(() => {
+        indexUrlBtn.classList.remove("btn-success");
+        indexUrlBtn.innerHTML = `<span>Index URL</span>`;
+      }, 4000);
+
+      // 4. Update Sources list with green chunk badge
+      const existing = indexedSources.find((s) => s.name === url);
+      if (existing) {
+        existing.chunks = data.chunks;
+      } else {
+        indexedSources.push({ name: url, chunks: data.chunks });
       }
+      renderSources();
       urlInput.value = "";
     } catch (err) {
       showToast(err.message, "error");
+      indexUrlBtn.innerHTML = `<span>Index URL</span>`;
     } finally {
       indexUrlBtn.disabled = false;
-      indexUrlBtn.innerHTML = `<span>Index Webpage</span>`;
     }
   });
 
@@ -182,8 +249,9 @@ document.addEventListener("DOMContentLoaded", () => {
   indexPdfBtn.addEventListener("click", async () => {
     if (!selectedPdfFile) return;
 
+    const currentFileName = selectedPdfFile.name;
     indexPdfBtn.disabled = true;
-    indexPdfBtn.innerHTML = `<span>Uploading & Indexing...</span>`;
+    indexPdfBtn.innerHTML = `<span>Indexing...</span>`;
 
     const formData = new FormData();
     formData.append("file", selectedPdfFile);
@@ -197,25 +265,44 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to index PDF");
       }
-      showToast(`Successfully indexed ${data.chunks} chunks from ${selectedPdfFile.name}!`, "success");
-      if (!indexedSources.includes(selectedPdfFile.name)) {
-        indexedSources.push(selectedPdfFile.name);
-        renderSources();
+
+      // 1. Show Green Inline Banner
+      showGreenConfirmation(`✓ Indexed ${data.chunks} chunks from ${currentFileName}!`);
+
+      // 2. Toast in Green
+      showToast(`✓ Successfully indexed ${data.chunks} chunks!`, "success");
+
+      // 3. Button turns vibrant green temporarily
+      indexPdfBtn.classList.add("btn-success");
+      indexPdfBtn.innerHTML = `<span>✓ Done! (${data.chunks} chunks)</span>`;
+      setTimeout(() => {
+        indexPdfBtn.classList.remove("btn-success");
+        indexPdfBtn.innerHTML = `<span>Index PDF</span>`;
+      }, 4000);
+
+      // 4. Update Sources list with green chunk badge
+      const existing = indexedSources.find((s) => s.name === currentFileName);
+      if (existing) {
+        existing.chunks = data.chunks;
+      } else {
+        indexedSources.push({ name: currentFileName, chunks: data.chunks });
       }
+      renderSources();
+
       selectedPdfFile = null;
       fileNamePreview.textContent = "";
       pdfFileInput.value = "";
     } catch (err) {
       showToast(err.message, "error");
+      indexPdfBtn.innerHTML = `<span>Index PDF</span>`;
     } finally {
       indexPdfBtn.disabled = false;
-      indexPdfBtn.innerHTML = `<span>Index PDF</span>`;
     }
   });
 
   // Clear Store Action
   clearStoreBtn.addEventListener("click", async () => {
-    if (!confirm("Are you sure you want to clear all indexed knowledge from the vector store?")) {
+    if (!confirm("Clear all indexed sources?")) {
       return;
     }
     clearStoreBtn.disabled = true;
@@ -227,7 +314,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       indexedSources = [];
       renderSources();
-      showToast("Knowledge base cleared successfully", "success");
+      if (indexSuccessBanner) indexSuccessBanner.style.display = "none";
+      showToast("Sources cleared", "success");
     } catch (err) {
       showToast(err.message, "error");
     } finally {
@@ -249,18 +337,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const query = chatInput.value.trim();
     if (!query) return;
 
-    // Remove empty state if present
     if (emptyState) {
       emptyState.style.display = "none";
     }
 
-    // Append User Message
     appendMessage("user", query);
     chatInput.value = "";
     chatInput.disabled = true;
     sendBtn.disabled = true;
 
-    // Append Pending Assistant Bubble
     const pendingId = "pending-" + Date.now();
     appendLoadingMessage(pendingId);
 
@@ -281,13 +366,13 @@ document.addEventListener("DOMContentLoaded", () => {
       removeMessage(pendingId);
 
       if (!res.ok) {
-        throw new Error(data.detail || data.message || "Failed to query RAG model");
+        throw new Error(data.detail || data.message || "Failed to query model");
       }
 
       appendMessage("assistant", data.answer, data.documents || []);
     } catch (err) {
       removeMessage(pendingId);
-      appendMessage("assistant", `⚠️ Error: ${err.message}`);
+      appendMessage("assistant", `Error: ${err.message}`);
     } finally {
       chatInput.disabled = false;
       sendBtn.disabled = false;
@@ -315,10 +400,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const header = document.createElement("div");
       header.className = "sources-accordion-header";
-      header.innerHTML = `<span>📚 Retrieved Sources (${documents.length})</span><span>▾</span>`;
+      header.innerHTML = `<span>Sources (${documents.length})</span><span class="chevron">▾</span>`;
       header.addEventListener("click", () => {
         accordion.classList.toggle("open");
-        header.querySelector("span:last-child").textContent = accordion.classList.contains("open") ? "▴" : "▾";
+        const chevron = header.querySelector(".chevron");
+        if (chevron) {
+          chevron.textContent = accordion.classList.contains("open") ? "▴" : "▾";
+        }
       });
 
       const body = document.createElement("div");
@@ -327,11 +415,10 @@ document.addEventListener("DOMContentLoaded", () => {
         .map((doc, idx) => {
           const meta = doc.metadata || {};
           const source = meta.source || "Unknown Source";
-          const title = meta.title ? ` (${meta.title})` : "";
           const snippet = doc.page_content || "";
           return `
             <div class="source-card">
-              <div class="source-card-header">[Source ${idx + 1}] ${escapeHtml(source)}${escapeHtml(title)}</div>
+              <div class="source-card-header">${idx + 1}. ${escapeHtml(source)}</div>
               <div class="source-card-snippet">${escapeHtml(snippet)}</div>
             </div>
           `;
@@ -398,10 +485,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Italic *text*
     html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
     // Inline code `code`
-    html = html.replace(/`([^`]+)`/g, "<code style='background:#f1f5f9;padding:2px 4px;border-radius:4px;font-size:0.85em;'>$1</code>");
+    html = html.replace(/`([^`]+)`/g, "<code class='inline-code'>$1</code>");
     // Line breaks to <br>
-    html = html.replace(/\n\n/g, "</p><p style='margin-top:8px;'>");
+    html = html.replace(/\n\n/g, "</p><p class='msg-p'>");
     html = html.replace(/\n/g, "<br>");
-    return `<p>${html}</p>`;
+    return `<p class='msg-p'>${html}</p>`;
   }
 });

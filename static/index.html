@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AnalyserXDecoder — Webpage & Document RAG Intelligence</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>AnalyserX — Document Intelligence</title>
+  <!-- Immediate theme script to prevent any flash or delay -->
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/style.css?v=4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,47 +23,41 @@
     <!-- Left Sidebar: Controls & Ingestion -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-icon">🌐</div>
-        <div>
-          <h1 class="brand-title">AnalyserXDecoder</h1>
-          <p class="brand-tag">Grounded RAG Intelligence</p>
-        </div>
+        <h1 class="brand-title">AnalyserX</h1>
       </div>
 
-      <!-- Provider & Model Configuration -->
+      <!-- Model Configuration -->
       <section class="section-card">
-        <div class="section-title">Model Settings</div>
+        <div class="section-title">Model</div>
         <div class="form-group">
-          <label class="form-label" for="providerSelect">LLM Provider</label>
+          <label class="form-label" for="providerSelect">Provider</label>
           <select id="providerSelect" class="form-select">
             <option value="gemini" selected>Google Gemini</option>
             <option value="mistral">Mistral AI</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="modelSelect">Model</label>
-          <select id="modelSelect" class="form-select">
-            <!-- Dynamically populated -->
-          </select>
+          <label class="form-label" for="modelSelect">Model Name</label>
+          <select id="modelSelect" class="form-select"></select>
         </div>
       </section>
 
       <!-- Knowledge Base Ingestion -->
       <section class="section-card">
-        <div class="section-title">Ingest Knowledge</div>
+        <div class="section-title">Add Sources</div>
         
         <div class="tabs">
-          <button type="button" class="tab-btn active" data-tab="urlTab">Webpage URL</button>
-          <button type="button" class="tab-btn" data-tab="pdfTab">Upload PDF</button>
+          <button type="button" class="tab-btn active" data-tab="urlTab">URL</button>
+          <button type="button" class="tab-btn" data-tab="pdfTab">PDF</button>
         </div>
 
         <!-- URL Tab -->
         <div id="urlTab" class="tab-panel active">
           <div class="form-group">
-            <input type="url" id="urlInput" class="form-control" placeholder="https://en.wikipedia.org/wiki/AI">
+            <input type="url" id="urlInput" class="form-control" placeholder="https://example.com/article">
           </div>
           <button type="button" id="indexUrlBtn" class="btn btn-primary">
-            <span>Index Webpage</span>
+            <span>Index URL</span>
           </button>
         </div>
 
@@ -62,18 +65,26 @@
         <div id="pdfTab" class="tab-panel">
           <div class="file-dropzone" id="dropzone">
             <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
-            <div class="file-dropzone-text" id="dropzoneLabel">Click or drag PDF here</div>
+            <div class="file-dropzone-text" id="dropzoneLabel">Choose or drag a PDF file</div>
             <div class="file-name-preview" id="fileNamePreview"></div>
           </div>
           <button type="button" id="indexPdfBtn" class="btn btn-primary" disabled>
             <span>Index PDF</span>
           </button>
         </div>
+
+        <!-- Inline Green Confirmation Banner -->
+        <div id="indexSuccessBanner" class="index-success-banner" style="display: none;">
+          <svg class="success-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span id="indexSuccessText">Indexed 4 chunks successfully</span>
+        </div>
       </section>
 
       <!-- Retrieval Parameters -->
       <section class="section-card">
-        <div class="section-title">Retrieval Controls</div>
+        <div class="section-title">Retrieval</div>
         <div class="form-group">
           <label class="form-label" for="searchTypeSelect">Strategy</label>
           <select id="searchTypeSelect" class="form-select">
@@ -82,24 +93,25 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="kChunksRange">
-            Chunks to Retrieve: <span id="kValLabel" style="font-weight: 600;">4</span>
-          </label>
-          <input type="range" id="kChunksRange" min="1" max="10" value="4" class="form-range" style="accent-color: var(--primary);">
+          <div class="label-with-val">
+            <label class="form-label" for="kChunksRange">Chunks Retrieved</label>
+            <span id="kValLabel" class="val-pill">4</span>
+          </div>
+          <input type="range" id="kChunksRange" min="1" max="10" value="4" class="form-range">
         </div>
       </section>
 
       <!-- Indexed Sources -->
       <section class="section-card">
         <div class="section-title">
-          <span>Indexed Sources</span>
-          <span id="sourceCountBadge" style="font-size: 0.75rem; background: var(--bg-primary); padding: 2px 6px; border-radius: 4px;">0</span>
+          <span>Sources</span>
+          <span id="sourceCountBadge" class="count-badge">0</span>
         </div>
         <div id="sourcesList" class="source-list">
-          <div class="empty-sources">No sources indexed in this session.</div>
+          <div class="empty-sources">No sources indexed yet.</div>
         </div>
-        <button type="button" id="clearStoreBtn" class="btn btn-danger-outline" style="margin-top: 4px;">
-          Clear Knowledge Base
+        <button type="button" id="clearStoreBtn" class="btn btn-secondary">
+          Clear Sources
         </button>
       </section>
     </aside>
@@ -109,12 +121,37 @@
       <!-- Chat Header -->
       <header class="chat-header">
         <div class="chat-header-info">
-          <h2 class="chat-header-title">Document Intelligence Workspace</h2>
-          <p class="chat-header-subtitle">Ask questions grounded strictly in your indexed documents</p>
+          <h2 class="chat-header-title">Chat</h2>
         </div>
-        <div class="model-badge">
-          <span class="model-badge-dot"></span>
-          <span id="activeModelBadge">Gemini 3.5 Flash</span>
+        <div class="header-actions">
+          <div class="model-badge">
+            <span class="model-badge-dot"></span>
+            <span id="activeModelBadge">Gemini 3.5 Flash</span>
+          </div>
+
+          <!-- Visually Polish Segmented Theme Switcher -->
+          <div class="theme-segmented-control" id="themeSegmentedControl" role="group" aria-label="Theme switcher">
+            <button type="button" class="theme-segment-btn" data-theme-val="light" title="Switch to light mode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <span>Light</span>
+            </button>
+            <button type="button" class="theme-segment-btn active" data-theme-val="dark" title="Switch to dark mode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+              <span>Dark</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -122,15 +159,12 @@
       <div class="messages-container" id="messagesContainer">
         <!-- Initial Empty State -->
         <div class="empty-chat" id="emptyState">
-          <div class="empty-icon">📖</div>
-          <h3 class="empty-title">Ready to decode your sources</h3>
-          <p class="empty-desc">
-            Ingest a webpage URL or local PDF on the left to start conversing with your knowledge base.
-          </p>
+          <h3 class="empty-title">Ask anything about your sources</h3>
+          <p class="empty-desc">Index a webpage URL or PDF to start asking grounded questions.</p>
           <div class="quick-prompts">
-            <button class="quick-prompt-btn" data-prompt="What is this document about?">"What is this document about?"</button>
-            <button class="quick-prompt-btn" data-prompt="Summarize the key points and findings">"Summarize the key points"</button>
-            <button class="quick-prompt-btn" data-prompt="List the main conclusions">"List the main conclusions"</button>
+            <button class="quick-prompt-btn" data-prompt="Summarize the main points of this document.">Summarize main points</button>
+            <button class="quick-prompt-btn" data-prompt="What are the key conclusions?">Key conclusions</button>
+            <button class="quick-prompt-btn" data-prompt="What are the primary findings mentioned?">Primary findings</button>
           </div>
         </div>
       </div>
@@ -142,11 +176,14 @@
             type="text" 
             id="chatInput" 
             class="chat-input" 
-            placeholder="Ask a question about the indexed content..." 
+            placeholder="Ask a question..." 
             autocomplete="off"
           >
-          <button type="submit" id="sendBtn" class="send-btn" title="Send message">
-            ➤
+          <button type="submit" id="sendBtn" class="send-btn" title="Send message" aria-label="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
           </button>
         </form>
       </div>
@@ -156,6 +193,6 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast"></div>
 
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=4"></script>
 </body>
 </html>
