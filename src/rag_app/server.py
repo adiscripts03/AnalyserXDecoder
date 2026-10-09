@@ -10,7 +10,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Add project root and src to sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 SRC_DIR = ROOT_DIR / "src"
 STATIC_DIR = ROOT_DIR / "static"
@@ -70,6 +69,12 @@ async def serve_index():
     if not index_file.exists():
         raise HTTPException(status_code=404, detail="Frontend index.html not found.")
     return FileResponse(str(index_file))
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Render monitoring."""
+    return {"status": "ok", "service": "AnalyserXDecoder"}
 
 
 @app.post("/api/ingest/url")

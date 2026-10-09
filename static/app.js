@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Elements
   const providerSelect = document.getElementById("providerSelect");
   const modelSelect = document.getElementById("modelSelect");
   const activeModelBadge = document.getElementById("activeModelBadge");
@@ -32,9 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedPdfFile = null;
   let bannerTimeout = null;
 
-  // ----------------------------------------------------
-  // Theme Switcher Logic
-  // ----------------------------------------------------
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     try {
@@ -63,9 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ----------------------------------------------------
-  // Model Provider Mapping
-  // ----------------------------------------------------
   const MODEL_OPTIONS = {
     gemini: [
       { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
@@ -79,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ],
   };
 
-  // Toast Helper
   function showToast(message, type = "success") {
     toast.textContent = message;
     toast.className = `toast ${type} show`;
@@ -88,7 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 3500);
   }
 
-  // Green Inline Confirmation Helper
   function showGreenConfirmation(message) {
     if (!indexSuccessBanner || !indexSuccessText) return;
     indexSuccessText.textContent = message;
@@ -100,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 8000);
   }
 
-  // Update Model Select
   function updateModelOptions() {
     const provider = providerSelect.value;
     const models = MODEL_OPTIONS[provider] || [];
@@ -124,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
   modelSelect.addEventListener("change", updateBadge);
   updateModelOptions();
 
-  // Tab Switching
   [urlTabBtn, pdfTabBtn].forEach((btn) => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.tab;
@@ -135,12 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // K Slider
   kChunksRange.addEventListener("input", (e) => {
     kValLabel.textContent = e.target.value;
   });
 
-  // PDF File Dropzone
   dropzone.addEventListener("click", () => pdfFileInput.click());
   dropzone.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -172,7 +159,6 @@ document.addEventListener("DOMContentLoaded", () => {
     indexPdfBtn.disabled = false;
   }
 
-  // Refresh Sources UI
   function renderSources() {
     sourceCountBadge.textContent = indexedSources.length;
     if (indexedSources.length === 0) {
@@ -192,7 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
-  // Ingest URL Action
   indexUrlBtn.addEventListener("click", async () => {
     const url = urlInput.value.trim();
     if (!url) {
@@ -214,13 +199,10 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(data.message || "Failed to index URL");
       }
 
-      // 1. Show Green Inline Banner
       showGreenConfirmation(`✓ Indexed ${data.chunks} chunks successfully!`);
 
-      // 2. Toast in Green
       showToast(`✓ Successfully indexed ${data.chunks} chunks!`, "success");
 
-      // 3. Button turns vibrant green temporarily
       indexUrlBtn.classList.add("btn-success");
       indexUrlBtn.innerHTML = `<span>✓ Done! (${data.chunks} chunks)</span>`;
       setTimeout(() => {
@@ -228,7 +210,6 @@ document.addEventListener("DOMContentLoaded", () => {
         indexUrlBtn.innerHTML = `<span>Index URL</span>`;
       }, 4000);
 
-      // 4. Update Sources list with green chunk badge
       const existing = indexedSources.find((s) => s.name === url);
       if (existing) {
         existing.chunks = data.chunks;
@@ -245,7 +226,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Ingest PDF Action
   indexPdfBtn.addEventListener("click", async () => {
     if (!selectedPdfFile) return;
 
@@ -266,13 +246,10 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(data.message || "Failed to index PDF");
       }
 
-      // 1. Show Green Inline Banner
       showGreenConfirmation(`✓ Indexed ${data.chunks} chunks from ${currentFileName}!`);
 
-      // 2. Toast in Green
       showToast(`✓ Successfully indexed ${data.chunks} chunks!`, "success");
 
-      // 3. Button turns vibrant green temporarily
       indexPdfBtn.classList.add("btn-success");
       indexPdfBtn.innerHTML = `<span>✓ Done! (${data.chunks} chunks)</span>`;
       setTimeout(() => {
@@ -280,7 +257,6 @@ document.addEventListener("DOMContentLoaded", () => {
         indexPdfBtn.innerHTML = `<span>Index PDF</span>`;
       }, 4000);
 
-      // 4. Update Sources list with green chunk badge
       const existing = indexedSources.find((s) => s.name === currentFileName);
       if (existing) {
         existing.chunks = data.chunks;
@@ -300,7 +276,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Clear Store Action
   clearStoreBtn.addEventListener("click", async () => {
     if (!confirm("Clear all indexed sources?")) {
       return;
@@ -323,7 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Quick Prompt Click
   document.querySelectorAll(".quick-prompt-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       chatInput.value = btn.dataset.prompt;
@@ -331,7 +305,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Chat Submission
   chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const query = chatInput.value.trim();
@@ -380,7 +353,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Render Messages
   function appendMessage(role, content, documents = []) {
     const row = document.createElement("div");
     row.className = `message-row ${role}`;
@@ -393,7 +365,6 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.className = "bubble";
     bubble.innerHTML = formatMarkdown(content);
 
-    // Citations Accordion
     if (role === "assistant" && documents && documents.length > 0) {
       const accordion = document.createElement("div");
       accordion.className = "sources-accordion";
@@ -466,7 +437,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (el) el.remove();
   }
 
-  // Formatting helpers
   function escapeHtml(str) {
     if (!str) return "";
     return str
@@ -480,13 +450,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function formatMarkdown(text) {
     if (!text) return "";
     let html = escapeHtml(text);
-    // Bold **text**
     html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-    // Italic *text*
     html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
-    // Inline code `code`
     html = html.replace(/`([^`]+)`/g, "<code class='inline-code'>$1</code>");
-    // Line breaks to <br>
     html = html.replace(/\n\n/g, "</p><p class='msg-p'>");
     html = html.replace(/\n/g, "<br>");
     return `<p class='msg-p'>${html}</p>`;

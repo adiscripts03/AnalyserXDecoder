@@ -13,19 +13,7 @@ def get_retriever(
     lambda_mult: float = 0.5,
     score_threshold: Optional[float] = None,
 ) -> BaseRetriever:
-    """Creates and returns a LangChain VectorStoreRetriever configured for ChromaDB.
 
-    Args:
-        collection_name: Name of the Chroma collection.
-        search_type: Retrieval strategy ('similarity', 'mmr', or 'similarity_score_threshold').
-        k: Number of relevant document chunks to return.
-        fetch_k: Number of candidate documents to pass to MMR algorithm (only if search_type='mmr').
-        lambda_mult: Diversity factor between 0 (max diversity) and 1 (min diversity) for MMR.
-        score_threshold: Minimum similarity score cutoff (only if search_type='similarity_score_threshold').
-
-    Returns:
-        BaseRetriever: LangChain runnable retriever instance.
-    """
     vector_store = get_vector_store(collection_name=collection_name)
     search_kwargs = {"k": k}
 
@@ -47,7 +35,6 @@ def get_similarity_retriever(
     collection_name: str = "webpage_decoder",
     k: int = 4,
 ) -> BaseRetriever:
-    """Convenience factory for standard cosine similarity retrieval."""
     return get_retriever(
         collection_name=collection_name,
         search_type="similarity",
@@ -61,7 +48,6 @@ def get_mmr_retriever(
     fetch_k: int = 20,
     lambda_mult: float = 0.5,
 ) -> BaseRetriever:
-    """Convenience factory for Maximal Marginal Relevance (MMR) retrieval to optimize diversity."""
     return get_retriever(
         collection_name=collection_name,
         search_type="mmr",
@@ -76,7 +62,6 @@ def get_threshold_retriever(
     k: int = 4,
     score_threshold: float = 0.5,
 ) -> BaseRetriever:
-    """Convenience factory for score-thresholded retrieval to filter out low-confidence matches."""
     return get_retriever(
         collection_name=collection_name,
         search_type="similarity_score_threshold",
@@ -86,10 +71,6 @@ def get_threshold_retriever(
 
 
 def format_retrieved_documents(documents: List[Document]) -> str:
-    """Formats retrieved document chunks into a formatted context string for LLM prompts.
-
-    Includes source URL/path metadata for grounded attribution.
-    """
     formatted_chunks = []
     for idx, doc in enumerate(documents, start=1):
         source = doc.metadata.get("source", "Unknown Source")

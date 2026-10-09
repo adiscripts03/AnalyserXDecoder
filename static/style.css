@@ -1,8 +1,4 @@
-/* ----------------------------------------------------
-   CSS Variables & Theming
-   ---------------------------------------------------- */
 
-/* Default Dark Theme: Comfortable Light-Black / Graphite */
 :root,
 html[data-theme="dark"] {
   --bg-primary: #181a20;
@@ -47,7 +43,6 @@ html[data-theme="dark"] {
   --radius-lg: 14px;
 }
 
-/* Light Theme */
 html[data-theme="light"] {
   --bg-primary: #f8fafc;
   --bg-sidebar: #ffffff;
@@ -104,7 +99,6 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -123,14 +117,12 @@ body {
   background: var(--text-muted);
 }
 
-/* App Layout */
 .app-container {
   display: flex;
   height: 100vh;
   width: 100vw;
 }
 
-/* Sidebar */
 .sidebar {
   width: 340px;
   min-width: 300px;
@@ -156,7 +148,6 @@ body {
   color: var(--text-primary);
 }
 
-/* Section Cards */
 .section-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -179,7 +170,6 @@ body {
   justify-content: space-between;
 }
 
-/* Form Controls */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -244,7 +234,6 @@ body {
   cursor: pointer;
 }
 
-/* Tabs */
 .tabs {
   display: flex;
   background: var(--bg-input);
@@ -290,7 +279,6 @@ body {
   display: flex;
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -316,7 +304,6 @@ body {
   background-color: var(--primary-hover);
 }
 
-/* Green Success Button State */
 .btn-success {
   background-color: var(--accent-green) !important;
   color: #ffffff !important;
@@ -340,7 +327,6 @@ body {
   cursor: not-allowed;
 }
 
-/* Green Ingestion Success Banner */
 .index-success-banner {
   display: flex;
   align-items: center;
@@ -372,7 +358,6 @@ body {
   }
 }
 
-/* File Upload Drop Area */
 .file-dropzone {
   border: 1px dashed var(--border-color);
   border-radius: var(--radius-sm);
@@ -400,7 +385,6 @@ body {
   word-break: break-all;
 }
 
-/* Sources List */
 .source-list {
   display: flex;
   flex-direction: column;
@@ -453,7 +437,6 @@ body {
   padding: 8px 0;
 }
 
-/* Main Chat Section */
 .main-chat {
   flex: 1;
   display: flex;
@@ -463,7 +446,6 @@ body {
   transition: background-color 0.2s ease;
 }
 
-/* Chat Header */
 .chat-header {
   padding: 14px 24px;
   border-bottom: 1px solid var(--border-color);
@@ -506,7 +488,6 @@ body {
   background: var(--accent-green);
 }
 
-/* Segmented Theme Switcher */
 .theme-segmented-control {
   display: inline-flex;
   background-color: var(--segmented-bg);
@@ -548,7 +529,6 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-/* Chat Messages */
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -558,7 +538,6 @@ body {
   gap: 18px;
 }
 
-/* Empty State */
 .empty-chat {
   margin: auto;
   text-align: center;
@@ -608,7 +587,6 @@ body {
   background: var(--bg-card-hover);
 }
 
-/* Messages */
 .message-row {
   display: flex;
   gap: 10px;
@@ -682,7 +660,6 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Citations & Sources Accordion */
 .sources-accordion {
   margin-top: 10px;
   border: 1px solid var(--border-color);
@@ -747,7 +724,6 @@ body {
   line-height: 1.4;
 }
 
-/* Chat Input Bar */
 .chat-input-area {
   padding: 16px 24px 20px 24px;
   border-top: 1px solid var(--border-color);
@@ -808,7 +784,6 @@ body {
   cursor: not-allowed;
 }
 
-/* Toast */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -844,7 +819,6 @@ body {
   border: 1px solid var(--accent-red);
 }
 
-/* Loading Dots */
 .typing-dots {
   display: flex;
   gap: 4px;
@@ -867,7 +841,6 @@ body {
   40% { transform: scale(1); }
 }
 
-/* Responsive */
 @media (max-width: 800px) {
   .app-container {
     flex-direction: column;

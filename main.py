@@ -30,8 +30,10 @@ if __name__ == "__main__":
     else:
         import uvicorn
         port = int(os.getenv("PORT", 8000))
+        is_dev = os.getenv("ENVIRONMENT", "development").lower() == "development" and "PORT" not in os.environ
         print("=" * 65)
         print("🌐 AnalyserXDecoder — HTML/CSS Web UI")
-        print(f"🚀 Server running at: http://localhost:{port}")
+        print(f"🚀 Server running at: http://0.0.0.0:{port}")
+        print(f"⚙️  Mode: {'Development (reload enabled)' if is_dev else 'Production'}")
         print("=" * 65)
-        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=is_dev)

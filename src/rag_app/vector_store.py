@@ -11,7 +11,8 @@ from langchain_chroma import Chroma
 load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-PERSIST_DIRECTORY = PROJECT_ROOT / "vectorstore" / "chroma_db"
+PERSIST_DIRECTORY = Path(os.getenv("CHROMA_PERSIST_DIRECTORY", str(PROJECT_ROOT / "vectorstore" / "chroma_db")))
+PERSIST_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
 def get_embedding_model() -> GoogleGenerativeAIEmbeddings:

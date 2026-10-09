@@ -26,12 +26,10 @@ from rag_app.retriever import (
     format_retrieved_documents,
 )
 
-# Load environment variables (.env)
 load_dotenv()
 
 DEFAULT_COLLECTION = "webpage_decoder"
 
-# Model provider configurations
 DEFAULT_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 DEFAULT_MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "open-mistral-7b")
@@ -39,8 +37,7 @@ DEFAULT_MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "open-mistral-7b")
 GEMINI_FALLBACK_MODELS = ["gemini-3.8-flash", "gemini-flash-latest"]
 MISTRAL_FALLBACK_MODELS = ["mistral-small-latest"]
 
-# Grounded RAG system prompt
-RAG_PROMPT_TEMPLATE = """You are WebpageDecoder, an intelligent AI research assistant that decodes webpages and documents to their core.
+RAG_PROMPT_TEMPLATE = """You are Analyser and Decoder, an intelligent AI research assistant that decodes webpages and documents to their core.
 Answer the user's question accurately, clearly, and concisely using ONLY the provided context.
 If the answer cannot be found or deduced from the context, state honestly:
 "I am sorry, but the provided documents do not contain enough information to answer this question."
@@ -85,7 +82,6 @@ def get_llm(
     model_name: Optional[str] = None,
     temperature: float = 0.2,
 ):
-    """Initializes and returns the Chat model for either Gemini or Mistral."""
     provider_clean = provider.lower()
     if provider_clean == "mistral":
         selected_model = model_name or DEFAULT_MISTRAL_MODEL
@@ -105,7 +101,6 @@ def build_rag_chain(
     provider: str = DEFAULT_PROVIDER,
     model_name: Optional[str] = None,
 ):
-    """Builds a LangChain runnable RAG chain using the chosen provider."""
     prompt = ChatPromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
     llm = get_llm(provider=provider, model_name=model_name)
     return prompt | llm | StrOutputParser()
@@ -117,7 +112,6 @@ def ingest_webpage(
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
 ) -> int:
-    """Ingests, chunks, and stores content from a webpage URL into ChromaDB."""
     print(f"\n🌐 Scraping content from: {url}")
     try:
         docs = load_url(url)
@@ -144,7 +138,6 @@ def ingest_pdf_file(
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
 ) -> int:
-    """Ingests, chunks, and stores content from a local PDF file into ChromaDB."""
     path = Path(file_path).resolve()
     if not path.exists():
         raise FileNotFoundError(f"PDF file not found at: {file_path}")
@@ -177,7 +170,6 @@ def answer_query(
     provider: str = DEFAULT_PROVIDER,
     model_name: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Retrieves relevant context and generates a grounded answer using the selected LLM provider."""
     retriever = get_retriever(
         collection_name=collection_name,
         search_type=search_type,
@@ -255,7 +247,7 @@ def run_interactive_mode(
     while True:
         display_model = current_model or (DEFAULT_MISTRAL_MODEL if current_provider == "mistral" else DEFAULT_GEMINI_MODEL)
         print("=" * 65)
-        print("🌐  WebpageDecoder — Wikipedia of Webpages (Interactive CLI)")
+        print("🌐  AnalyserXDecoder — Mini Wikipedia (Interactive CLI)")
         print("=" * 65)
         print(f"• Active Collection: {collection_name}")
         print(f"• Search Strategy:   {search_type} (top {k} chunks)")

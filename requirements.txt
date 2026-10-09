@@ -10,5 +10,4 @@ langchain-openai>=1.6.7
 pypdf>=6.19.0
 python-dotenv>=1.2.4
 python-multipart>=0.0.12
-streamlit>=1.65.0
 uvicorn>=0.30.0
