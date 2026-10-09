@@ -1,7 +1,7 @@
 [project]
 name = "rag-app"
 version = "0.1.0"
-description = "Add your description here"
+description = "High-performance RAG document intelligence app powered by Google Gemini, Mistral AI, ChromaDB, and FastAPI"
 readme = "README.md"
 authors = [
     { name = "adiscripts03", email = "mejustaditya03@gmail.com" }
