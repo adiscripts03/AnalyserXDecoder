@@ -13,10 +13,10 @@
       } catch (e) { }
     })();
   </script>
-  <link rel="stylesheet" href="/static/style.css?v=4">
+  <link rel="stylesheet" href="/static/style.css?v=5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -24,10 +24,11 @@
     <aside class="sidebar">
       <div class="brand">
         <h1 class="brand-title">AnalyserXDecoder</h1>
+        <p class="brand-subtitle">Document Intelligence</p>
       </div>
 
       <section class="section-card">
-        <div class="section-title">Model</div>
+        <div class="section-title">Model Configuration</div>
         <div class="form-group">
           <label class="form-label" for="providerSelect">Provider</label>
           <select id="providerSelect" class="form-select">
@@ -44,23 +45,32 @@
       <section class="section-card">
         <div class="section-title">Add Sources</div>
 
-        <div class="tabs">
-          <button type="button" class="tab-btn active" data-tab="urlTab">URL</button>
-          <button type="button" class="tab-btn" data-tab="pdfTab">PDF</button>
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab-btn active" data-tab="urlTab" role="tab" aria-selected="true">Web URL</button>
+          <button type="button" class="tab-btn" data-tab="pdfTab" role="tab" aria-selected="false">PDF Document</button>
         </div>
 
-        <div id="urlTab" class="tab-panel active">
+        <div id="urlTab" class="tab-panel active" role="tabpanel">
           <div class="form-group">
-            <input type="url" id="urlInput" class="form-control" placeholder="https://example.com/article">
+            <label class="form-label visually-hidden" for="urlInput">Webpage URL</label>
+            <input type="url" id="urlInput" class="form-control" placeholder="https://example.com/article" autocomplete="url">
           </div>
           <button type="button" id="indexUrlBtn" class="btn btn-primary">
             <span>Index URL</span>
           </button>
         </div>
 
-        <div id="pdfTab" class="tab-panel">
-          <div class="file-dropzone" id="dropzone">
+        <div id="pdfTab" class="tab-panel" role="tabpanel">
+          <div class="file-dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drop PDF file here or click to browse">
             <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;">
+            <div class="file-dropzone-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <polyline points="9 15 12 12 15 15"></polyline>
+              </svg>
+            </div>
             <div class="file-dropzone-text" id="dropzoneLabel">Choose or drag a PDF file</div>
             <div class="file-name-preview" id="fileNamePreview"></div>
           </div>
@@ -71,17 +81,17 @@
 
         <div id="indexSuccessBanner" class="index-success-banner" style="display: none;">
           <svg class="success-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          <span id="indexSuccessText">Indexed 4 chunks successfully</span>
+          <span id="indexSuccessText">Indexed chunks successfully</span>
         </div>
       </section>
 
       <section class="section-card">
-        <div class="section-title">Retrieval</div>
+        <div class="section-title">Retrieval Strategy</div>
         <div class="form-group">
-          <label class="form-label" for="searchTypeSelect">Strategy</label>
+          <label class="form-label" for="searchTypeSelect">Search Type</label>
           <select id="searchTypeSelect" class="form-select">
             <option value="similarity" selected>Cosine Similarity</option>
             <option value="mmr">MMR (Diverse Chunks)</option>
@@ -92,17 +102,17 @@
             <label class="form-label" for="kChunksRange">Chunks Retrieved</label>
             <span id="kValLabel" class="val-pill">4</span>
           </div>
-          <input type="range" id="kChunksRange" min="1" max="10" value="4" class="form-range">
+          <input type="range" id="kChunksRange" min="1" max="10" value="4" class="form-range" aria-valuemin="1" aria-valuemax="10" aria-valuenow="4">
         </div>
       </section>
 
       <!-- Indexed Sources -->
       <section class="section-card">
         <div class="section-title">
-          <span>Sources</span>
+          <span>Active Sources</span>
           <span id="sourceCountBadge" class="count-badge">0</span>
         </div>
-        <div id="sourcesList" class="source-list">
+        <div id="sourcesList" class="source-list" role="region" aria-label="Indexed sources list">
           <div class="empty-sources">No sources indexed yet.</div>
         </div>
         <button type="button" id="clearStoreBtn" class="btn btn-secondary">
@@ -114,18 +124,18 @@
     <main class="main-chat">
       <header class="chat-header">
         <div class="chat-header-info">
-          <h2 class="chat-header-title">Chat</h2>
+          <h2 class="chat-header-title">Evidence Workspace</h2>
         </div>
         <div class="header-actions">
           <div class="model-badge">
-            <span class="model-badge-dot"></span>
+            <span class="model-badge-dot" aria-hidden="true"></span>
             <span id="activeModelBadge">Gemini 3.5 Flash</span>
           </div>
 
           <div class="theme-segmented-control" id="themeSegmentedControl" role="group" aria-label="Theme switcher">
             <button type="button" class="theme-segment-btn" data-theme-val="light" title="Switch to light mode">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="5"></circle>
                 <line x1="12" y1="1" x2="12" y2="3"></line>
                 <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -140,7 +150,7 @@
             </button>
             <button type="button" class="theme-segment-btn active" data-theme-val="dark" title="Switch to dark mode">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
               </svg>
               <span>Dark</span>
@@ -149,26 +159,30 @@
         </div>
       </header>
 
-      <div class="messages-container" id="messagesContainer">
+      <div class="messages-container" id="messagesContainer" role="log" aria-live="polite">
         <div class="empty-chat" id="emptyState">
+          <div class="empty-icon" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
           <h3 class="empty-title">Ask anything about your sources</h3>
-          <p class="empty-desc">Index a webpage URL or PDF to start asking grounded questions.</p>
+          <p class="empty-desc">Index a webpage URL or PDF document on the left to start asking grounded questions.</p>
           <div class="quick-prompts">
-            <button class="quick-prompt-btn" data-prompt="Summarize the main points of this document.">Summarize main
-              points</button>
-            <button class="quick-prompt-btn" data-prompt="What are the key conclusions?">Key conclusions</button>
-            <button class="quick-prompt-btn" data-prompt="What are the primary findings mentioned?">Primary
-              findings</button>
+            <button type="button" class="quick-prompt-btn" data-prompt="Summarize the main points of this document.">Summarize main points</button>
+            <button type="button" class="quick-prompt-btn" data-prompt="What are the key conclusions?">Key conclusions</button>
+            <button type="button" class="quick-prompt-btn" data-prompt="What are the primary findings mentioned?">Primary findings</button>
           </div>
         </div>
       </div>
 
       <div class="chat-input-area">
         <form id="chatForm" class="input-wrapper">
-          <input type="text" id="chatInput" class="chat-input" placeholder="Ask a question..." autocomplete="off">
-          <button type="submit" id="sendBtn" class="send-btn" title="Send message" aria-label="Send">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
+          <label for="chatInput" class="visually-hidden">Ask a question</label>
+          <input type="text" id="chatInput" class="chat-input" placeholder="Ask a question about your indexed evidence..." autocomplete="off">
+          <button type="submit" id="sendBtn" class="send-btn" title="Send message" aria-label="Send message">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
@@ -178,9 +192,9 @@
     </main>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="/static/app.js?v=4"></script>
+  <script src="/static/app.js?v=5"></script>
 </body>
 
 </html>

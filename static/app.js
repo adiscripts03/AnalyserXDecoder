@@ -417,12 +417,11 @@ document.addEventListener("DOMContentLoaded", () => {
     avatar.textContent = "AI";
 
     const bubble = document.createElement("div");
-    bubble.className = "bubble";
+    bubble.className = "bubble assistant-thinking";
     bubble.innerHTML = `
-      <div class="typing-dots">
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
-        <div class="typing-dot"></div>
+      <div class="thinking-status">
+        <span class="thinking-spinner" aria-hidden="true"></span>
+        <span class="thinking-label">Synthesizing evidence...</span>
       </div>
     `;
 
